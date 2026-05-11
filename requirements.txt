@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+psycopg2-binary
+pydantic[email]
+fastapi
+uvicorn
+psycopg2-binary
+pydantic
+python-dotenv
+# Agrega cualquier otra librería que importes en tu backend.py

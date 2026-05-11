@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runika EduPanel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --primary:#00B4D8; --pink:#E040FB; --bg:#0F1117; --surface:#1A1D27; --surface2:#21253A;
+      --border:rgba(255,255,255,.08); --text:#F0F2FF; --muted:#8B90A7; --verde:#4CAF50; --amarillo:#FFC107; --rojo:#F44336;
+      --mat:#4FC3F7; --esp:#FF8A65; --ing:#81C784; --shadow:0 10px 24px rgba(0,0,0,.18);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif}
+    body{background:var(--bg);color:var(--text)}
+    .hidden{display:none!important}
+    .btn{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:500;font-size:.85rem;display:inline-flex;align-items:center;gap:6px}
+    .btn:hover{filter:brightness(1.06)}
+    .btn-primary{background:linear-gradient(135deg,var(--primary),var(--pink));border:none}
+    .btn-sm{padding:5px 8px;font-size:.75rem;border-radius:6px}
+    .btn-danger{background:#b71c1c;border:none}
+    .badge{padding:4px 8px;border-radius:12px;font-size:.75rem;font-weight:600;display:inline-block}
+    .badge-mat{background:rgba(79,195,247,.15);color:var(--mat)}
+    .badge-esp{background:rgba(255,138,101,.15);color:var(--esp)}
+    .badge-ing{background:rgba(129,199,132,.15);color:var(--ing)}
+    .badge-green{background:rgba(76,175,80,.16);color:#8ee39d}
+    .badge-yellow{background:rgba(255,193,7,.16);color:#ffd95e}
+    .badge-red{background:rgba(244,67,54,.16);color:#ff8f86}
+    #loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+    .login-card{background:var(--surface);padding:32px;border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;box-shadow:var(--shadow)}
+    .login-card h1{margin-bottom:8px}
+    .login-card p{color:var(--muted);margin-bottom:20px}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;margin-bottom:8px;color:var(--muted);font-size:.9rem}
+    .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:.9rem}
+    .form-group textarea{min-height:110px;resize:vertical}
+    .checkbox-group{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+    .checkbox-item{display:flex;align-items:center;gap:6px;font-size:.9rem;cursor:pointer}
+    #appShell{display:flex;height:100vh}
+    #sidebar{width:260px;background:var(--surface);border-right:1px solid var(--border)}
+    .sidebar-header{padding:20px;font-weight:700;font-size:1.2rem}
+    .sidebar-nav a{display:flex;gap:10px;padding:14px 20px;color:var(--muted);text-decoration:none;cursor:pointer}
+    .sidebar-nav a.active,.sidebar-nav a:hover{background:rgba(255,255,255,.04);color:var(--text)}
+    .main-wrapper{flex:1;display:flex;flex-direction:column;min-width:0}
+    #topbar{height:70px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:16px}
+    #mainContent{padding:24px;overflow:auto;flex:1}
+    .status-indicator{display:flex;align-items:center;gap:8px;background:var(--surface2);padding:6px 12px;border-radius:20px;font-size:.8rem;white-space:nowrap}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--verde)}
+    .status-dot.offline{background:var(--rojo)}
+    .view-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px}
+    .teacher-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px}
+    .kpi-card,.chart-card,.table-container,.horario-container,.teacher-panel,.today-card,.note-card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+    .kpi-card,.teacher-panel,.today-card,.note-card{padding:20px}
+    .value{font-size:1.8rem;font-weight:700}
+    .muted{color:var(--muted)}
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .chart-card{padding:20px}
+    .chart-container{position:relative;height:260px;width:100%}
+    table{width:100%;border-collapse:collapse;font-size:.85rem}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+    th{background:var(--surface2);color:var(--muted);font-size:.8rem}
+    .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700}
+    .user-profile{display:flex;align-items:center;gap:10px;min-width:0}
+    .horario-grid{display:grid;grid-template-columns:90px repeat(5,1fr);min-width:850px;font-size:.8rem}
+    .horario-header,.horario-time,.horario-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .horario-header,.horario-time{background:var(--surface2);padding:8px;font-weight:600}
+    .horario-cell{padding:6px;min-height:70px}
+    .clase-card{background:var(--surface2);padding:8px;border-radius:8px;font-size:.75rem;border-left:3px solid var(--primary);margin-bottom:6px;cursor:pointer}
+    .clase-card:hover{background:#2a3045}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+    .modal-overlay.active{display:flex}
+    .modal-content{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:600px;max-height:90vh;overflow:auto;box-shadow:var(--shadow)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .modal-title{margin-bottom:16px}
+    .modal-footer{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:20px}
+    .footer-actions{display:flex;gap:10px}
+    .teacher-home-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-bottom:20px}
+    .today-list,.quick-list{display:grid;gap:10px;margin-top:14px}
+    .today-item,.quick-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px}
+    .quick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .section-title{font-size:1rem;font-weight:700;margin-bottom:8px}
+    .note-layout{display:grid;grid-template-columns:360px 1fr;gap:16px}
+    .star-row{display:flex;gap:8px;align-items:center}
+    .empty-state{padding:28px;text-align:center;color:var(--muted)}
+    @media(max-width:1100px){
+      .teacher-home-grid,.note-layout,.charts-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:900px){
+      #sidebar{display:none}
+      .form-row{grid-template-columns:1fr}
+      .horario-grid{min-width:auto;grid-template-columns:60px repeat(5,1fr)}
+      #topbar{padding:0 14px}
+      #mainContent{padding:14px}
+    }
+  </style>
+</head>
+<body>
+  <div id="loginScreen">
+    <div class="login-card">
+      <h1>Runika EduPanel</h1>
+      <p>Centro Kumon Ipiales</p>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Rol de acceso</label>
+          <select id="loginRole">
+            <option value="admin">Administrador</option>
+            <option value="profesor">Profesor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Correo</label>
+          <input type="email" id="loginEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="loginPassword" required>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" type="submit">Iniciar sesión</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="appShell" class="hidden">
+    <aside id="sidebar">
+      <div class="sidebar-header">EduPanel</div>
+      <nav class="sidebar-nav"></nav>
+    </aside>
+    <div class="main-wrapper">
+      <header id="topbar">
+        <div class="status-indicator" id="apiStatus">
+          <div class="status-dot"></div><span>API Conectada</span>
+        </div>
+        <div class="user-profile">
+          <div>
+            <div id="topbarName"></div>
+            <div id="topbarRole" class="muted" style="font-size:.8rem"></div>
+          </div>
+          <div class="avatar" id="topbarAvatar">NA</div>
+          <button class="btn" onclick="logout()">Salir</button>
+        </div>
+      </header>
+      <main id="mainContent"></main>
+    </div>
+  </div>
+
+  <div id="modalProfesor" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title" id="modalProfesorTitle">Nuevo profesor</h2>
+      <form id="formProfesor">
+        <input type="hidden" id="profId">
+        <div class="form-row">
+          <div class="form-group"><label>Nombre</label><input id="profNombre" required></div>
+          <div class="form-group"><label>Email</label><input id="profEmail" type="email" required></div>
+        </div>
+        <div class="form-group" id="profPassGroup">
+          <label>Contraseña temporal</label>
+          <input id="profPass" value="prof123" required>
+        </div>
+        <div class="form-group">
+          <label>Materias asignadas</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" name="profMat" value="MAT"> Matemáticas</label>
+            <label class="checkbox-item"><input type="checkbox" name="profMat" value="ESP"> Español</label>
+            <label class="checkbox-item"><input type="checkbox" name="profMat" value="ING"> Inglés</label>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:flex-end">
+          <div class="footer-actions">
+            <button type="button" class="btn" onclick="cerrarModal('modalProfesor')">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="profSubmitBtn">Guardar Profesor</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modalEstudiante" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title" id="modalEstudianteTitle">Nuevo estudiante</h2>
+      <form id="formEstudiante">
+        <input type="hidden" id="estId">
+        <div class="form-row">
+          <div class="form-group"><label>Nombres</label><input id="estNombres" required></div>
+          <div class="form-group"><label>Apellidos</label><input id="estApellidos" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Documento</label><input id="estDoc" required placeholder="Ej: 123456789"></div>
+          <div class="form-group"><label>Email</label><input id="estEmail" type="email" required></div>
+        </div>
+        <div class="form-group">
+          <label>Materias inscritas</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" name="estMat" value="MAT"> Matemáticas</label>
+            <label class="checkbox-item"><input type="checkbox" name="estMat" value="ESP"> Español</label>
+            <label class="checkbox-item"><input type="checkbox" name="estMat" value="ING"> Inglés</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Profesor titular</label>
+          <select id="estProfesor" required></select>
+        </div>
+        <div class="modal-footer" style="justify-content:flex-end">
+          <div class="footer-actions">
+            <button type="button" class="btn" onclick="cerrarModal('modalEstudiante')">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="estSubmitBtn">Guardar Estudiante</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modalHorario" class="modal-overlay">
+    <div class="modal-content" style="max-width:450px;">
+      <h2 class="modal-title" id="modalHorarioTitle">Asignar Horario</h2>
+      <form id="formHorario">
+        <input type="hidden" id="horarioId">
+        <div class="form-group">
+          <label>Estudiante</label>
+          <select id="horarioEstudiante" required></select>
+        </div>
+        <div class="form-group">
+          <label>Profesor</label>
+          <select id="horarioProfesor" required></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Día</label>
+            <select id="horarioDia" required>
+              <option value="MON">Lunes</option>
+              <option value="TUE">Martes</option>
+              <option value="WED">Miércoles</option>
+              <option value="THU">Jueves</option>
+              <option value="FRI">Viernes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Franja Horaria</label>
+            <select id="horarioHora" required>
+              <option value="08:00:00">08:00</option>
+              <option value="09:00:00">09:00</option>
+              <option value="10:00:00">10:00</option>
+              <option value="14:00:00">14:00</option>
+              <option value="15:00:00">15:00</option>
+              <option value="16:00:00">16:00</option>
+              <option value="17:00:00">17:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Materia</label>
+          <select id="horarioMateria" required>
+            <option value="MAT">Matemáticas</option>
+            <option value="ESP">Español</option>
+            <option value="ING">Inglés</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger hidden" id="horarioDeleteBtn" onclick="accionEliminarHorario()">Eliminar clase</button>
+          <div class="footer-actions">
+            <button type="button" class="btn" onclick="cerrarModal('modalHorario')">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="horarioSubmitBtn">Asignar al horario</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modalNota" class="modal-overlay">
+    <div class="modal-content" style="max-width:560px;">
+      <h2 class="modal-title">Registrar nota de clase</h2>
+      <form id="formNota">
+        <div class="form-group">
+          <label>Estudiante</label>
+          <select id="notaEstudiante" required></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Materia</label>
+            <select id="notaMateria" required>
+              <option value="MAT">Matemáticas</option>
+              <option value="ESP">Español</option>
+              <option value="ING">Inglés</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estrellas</label>
+            <select id="notaStars" required>
+              <option value="5">5</option>
+              <option value="4">4</option>
+              <option value="3">3</option>
+              <option value="2">2</option>
+              <option value="1">1</option>
+              <option value="0">0</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Observación</label>
+          <textarea id="notaObs" required placeholder="Escribe la observación de la clase"></textarea>
+        </div>
+        <div class="modal-footer" style="justify-content:flex-end;">
+          <div class="footer-actions">
+            <button type="button" class="btn" onclick="cerrarModal('modalNota')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar nota</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+let currentUser = null;
+let chartMat = null;
+let chartSem = null;
+let editingProfesorId = null;
+let editingEstudianteId = null;
+let editingHorarioId = null;
+const FRANJAS = ["08:00","09:00","10:00","14:00","15:00","16:00","17:00"];
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+
+function abrirModal(id){ document.getElementById(id).classList.add("active"); }
+function cerrarModal(id){ document.getElementById(id).classList.remove("active"); }
+function getInitials(name){ return (name || "NA").split(" ").map(x => x[0]).join("").slice(0,2).toUpperCase(); }
+function escapeHtml(str){ return String(str ?? "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function renderBadges(materias){
+  return (materias || []).map(m => {
+    const code = String(m).toLowerCase();
+    return `<span class="badge badge-${code}">${escapeHtml(m)}</span>`;
+  }).join(" ");
+}
+
+function normalizarMaterias(materias){
+  if (Array.isArray(materias)) return materias;
+  if (typeof materias === "string") return materias.replace(/[{}]/g, "").split(",").map(x => x.trim()).filter(Boolean);
+  return [];
+}
+
+function semaforoBadge(value){
+  const v = String(value || '').toLowerCase();
+  if(v === 'verde') return '<span class="badge badge-green">Verde</span>';
+  if(v === 'amarillo') return '<span class="badge badge-yellow">Amarillo</span>';
+  if(v === 'rojo') return '<span class="badge badge-red">Rojo</span>';
+  return value || '-';
+}
+
+async function api(path, options={}){
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options
+  });
+  if(!res.ok){
+    let detail = "Error";
+    try { const j = await res.json(); detail = j.detail || detail; } catch {}
+    throw new Error(detail);
+  }
+  if(res.status === 204) return {};
+  return res.json();
+}
+
+async function checkBackend(){
+  const dot = document.querySelector("#apiStatus .status-dot");
+  const span = document.querySelector("#apiStatus span");
+  try{ await api("/health"); dot.classList.remove("offline"); span.textContent = "API Conectada"; }
+  catch{ dot.classList.add("offline"); span.textContent = "API Offline"; }
+}
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const role = document.getElementById("loginRole").value;
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+  try{
+    const data = await api("/api/v1/login", { method: "POST", body: JSON.stringify({ role, email, password }) });
+    currentUser = { ...data, role, email };
+    login(currentUser);
+  }catch(err){ alert("Error de acceso: " + err.message); }
+});
+
+function login(user){
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appShell").classList.remove("hidden");
+  document.getElementById("topbarName").textContent = user.name;
+  document.getElementById("topbarRole").textContent = user.role === "admin" ? "Administrador" : "Profesor";
+  document.getElementById("topbarAvatar").textContent = getInitials(user.name);
+  renderSidebar();
+  checkBackend();
+  navigateTo(user.role === "admin" ? "dashboard" : "teacher-home");
+}
+
+function logout(){
+  currentUser = null;
+  document.getElementById("appShell").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+  document.getElementById("loginForm").reset();
+}
+
+function renderSidebar(){
+  const nav = document.querySelector(".sidebar-nav");
+  nav.innerHTML = currentUser.role === "admin"
+    ? `
+      <a onclick="navigateTo('dashboard')" id="nav-dashboard">Dashboard</a>
+      <a onclick="navigateTo('estudiantes')" id="nav-estudiantes">Estudiantes</a>
+      <a onclick="navigateTo('profesores')" id="nav-profesores">Profesores</a>
+      <a onclick="navigateTo('horario')" id="nav-horario">Horario</a>
+      <a onclick="navigateTo('diagnosticos')" id="nav-diagnosticos">Diagnósticos</a>
+    `
+    : `
+      <a onclick="navigateTo('teacher-home')" id="nav-teacher-home">Panel docente</a>
+      <a onclick="navigateTo('horario')" id="nav-horario">Mi horario</a>
+      <a onclick="navigateTo('estudiantes')" id="nav-estudiantes">Mis estudiantes</a>
+      <a onclick="navigateTo('notas')" id="nav-notas">Notas</a>
+      <a onclick="navigateTo('diagnosticos')" id="nav-diagnosticos">Diagnósticos</a>
+    `;
+}
+
+function setActive(view){
+  document.querySelectorAll(".sidebar-nav a").forEach(a => a.classList.remove("active"));
+  const el = document.getElementById(`nav-${view}`);
+  if(el) el.classList.add("active");
+}
+
+async function navigateTo(view){
+  setActive(view);
+  if(chartMat){ chartMat.destroy(); chartMat = null; }
+  if(chartSem){ chartSem.destroy(); chartSem = null; }
+  if(view === "dashboard") return renderDashboard();
+  if(view === "teacher-home") return renderTeacherHome();
+  if(view === "profesores") return renderProfesores();
+  if(view === "estudiantes") return renderEstudiantes();
+  if(view === "horario") return renderHorario();
+  if(view === "notas") return renderNotas();
+  if(view === "diagnosticos") return renderDiagnosticos();
+}
+
+async function renderDashboard(){
+  const data = await api("/api/v1/dashboard/stats");
+  document.getElementById("mainContent").innerHTML = `
+    <div class="view-header"><h2>Dashboard General</h2></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div>Total Estudiantes</div><div class="value">${data.totalEstudiantes}</div></div>
+      <div class="kpi-card"><div>Profesores</div><div class="value">${data.totalProfesores}</div></div>
+      <div class="kpi-card"><div>Clases Hoy</div><div class="value">${data.clasesHoy}</div></div>
+      <div class="kpi-card"><div>Boletines</div><div class="value">${data.boletinesGenerados}</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Materias</h3><div class="chart-container"><canvas id="chartMaterias"></canvas></div></div>
+      <div class="chart-card"><h3>Semáforo</h3><div class="chart-container"><canvas id="chartSemaforo"></canvas></div></div>
+    </div>
+  `;
+  setTimeout(() => {
+    const ctxMat = document.getElementById("chartMaterias");
+    const ctxSem = document.getElementById("chartSemaforo");
+    if (ctxMat) {
+      chartMat = new Chart(ctxMat, {
+        type: "doughnut",
+        data: { labels: ["Matemáticas", "Español", "Inglés"], datasets: [{ data: [data.materiasMatematicas, data.materiasEspanol, data.materiasIngles], backgroundColor: ["#4FC3F7","#FF8A65","#81C784"] }] },
+        options: { maintainAspectRatio:false, plugins:{legend:{labels:{color:'#F0F2FF'}}} }
+      });
+    }
+    if (ctxSem) {
+      chartSem = new Chart(ctxSem, {
+        type: "bar",
+        data: { labels: ["Verde", "Amarillo", "Rojo"], datasets: [{ label: "Semáforo", data: [data.semaforoVerde, data.semaforoAmarillo, data.semaforoRojo], backgroundColor: ["#4CAF50","#FFC107","#F44336"] }] },
+        options: { maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#F0F2FF'}}, y:{ticks:{color:'#8B90A7'}, grid:{color:'rgba(255,255,255,.08)'}}} }
+      });
+    }
+  }, 80);
+}
+
+async function getTeacherStudents(){
+  const email = encodeURIComponent(currentUser.email);
+  return api(`/api/v1/profesor/estudiantes?email=${email}`);
+}
+
+async function getTeacherSchedule(){
+  const email = encodeURIComponent(currentUser.email);
+  return api(`/api/v1/horario-profesor?email=${email}`);
+}
+
+async function renderTeacherHome(){
+  const [students, schedule, notes] = await Promise.all([
+    getTeacherStudents(),
+    getTeacherSchedule(),
+    api('/api/v1/notas')
+  ]);
+  const todayIndex = new Date().getDay();
+  const dayMap = {1:'MON',2:'TUE',3:'WED',4:'THU',5:'FRI'};
+  const todayCode = dayMap[todayIndex];
+  const clasesHoy = (schedule || []).filter(c => c.dia === todayCode);
+  const nombres = new Set((students || []).map(s => `${s.nombres} ${s.apellidos}`));
+  const notasPropias = (notes || []).filter(n => nombres.has(n.estudiante));
+  const recientes = notasPropias.slice(0,5);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2>Panel docente</h2>
+        <div class="muted">Resumen operativo de tus clases, estudiantes y seguimiento diario.</div>
+      </div>
+      <div class="quick-actions">
+        <button class="btn btn-primary" onclick="abrirModalCrearNota()">Nueva nota</button>
+        <button class="btn" onclick="navigateTo('horario')">Ver horario</button>
+        <button class="btn" onclick="navigateTo('estudiantes')">Ver estudiantes</button>
+      </div>
+    </div>
+
+    <div class="teacher-kpi-grid">
+      <div class="kpi-card"><div>Estudiantes visibles</div><div class="value">${students.length}</div></div>
+      <div class="kpi-card"><div>Clases de hoy</div><div class="value">${clasesHoy.length}</div></div>
+      <div class="kpi-card"><div>Notas registradas</div><div class="value">${notasPropias.length}</div></div>
+    </div>
+
+
+    <div class="teacher-panel">
+      <div class="section-title">Últimas notas</div>
+      ${recientes.length ? `
+        <table>
+          <thead><tr><th>Fecha</th><th>Estudiante</th><th>Materia</th><th>Estrellas</th><th>Observación</th></tr></thead>
+          <tbody>
+            ${recientes.map(n => `
+              <tr>
+                <td>${new Date(n.fecha).toLocaleDateString('es-CO')}</td>
+                <td>${escapeHtml(n.estudiante)}</td>
+                <td>${renderBadges([n.materia])}</td>
+                <td><span style="color:#FFC107">★</span>${escapeHtml(n.estrellas)}</td>
+                <td>${escapeHtml(n.observacion)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : `<div class="empty-state">Todavía no has registrado notas.</div>`}
+    </div>
+  `;
+}
+
+async function renderProfesores(){
+  const profesores = await api("/api/v1/profesores");
+  document.getElementById("mainContent").innerHTML = `
+    <div class="view-header">
+      <h2>Profesores</h2>
+      <button class="btn btn-primary" onclick="abrirModalCrearProfesor()">Nuevo profesor</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>Profesor</th><th>Materias</th><th>Estudiantes</th><th>Acciones</th></tr></thead>
+        <tbody>
+          ${profesores.map(p => `
+            <tr>
+              <td>${escapeHtml(p.nombre)}<br><small class="muted">${escapeHtml(p.email)}</small></td>
+              <td>${renderBadges(normalizarMaterias(p.materias))}</td>
+              <td>${escapeHtml(p.totalEstudiantes)}</td>
+              <td>
+                <button class="btn btn-sm" onclick='abrirModalEditarProfesor(${JSON.stringify(p).replace(/'/g, "&apos;")})'>Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarProfesor(${p.idProfesor})">Eliminar</button>
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function abrirModalCrearProfesor(){
+  editingProfesorId = null;
+  document.getElementById("modalProfesorTitle").textContent = "Nuevo profesor";
+  document.getElementById("profId").value = "";
+  document.getElementById("profNombre").value = "";
+  document.getElementById("profEmail").value = "";
+  document.getElementById("profPass").value = "prof123";
+  document.getElementById("profPassGroup").style.display = "block";
+  document.querySelectorAll('input[name="profMat"]').forEach(cb => cb.checked = false);
+  document.getElementById("profSubmitBtn").textContent = "Guardar Profesor";
+  abrirModal("modalProfesor");
+}
+
+function abrirModalEditarProfesor(p){
+  editingProfesorId = p.idProfesor;
+  document.getElementById("modalProfesorTitle").textContent = "Editar profesor";
+  document.getElementById("profId").value = p.idProfesor;
+  document.getElementById("profNombre").value = p.nombre;
+  document.getElementById("profEmail").value = p.email;
+  document.getElementById("profPassGroup").style.display = "none";
+  document.querySelectorAll('input[name="profMat"]').forEach(cb => cb.checked = normalizarMaterias(p.materias).includes(cb.value));
+  document.getElementById("profSubmitBtn").textContent = "Actualizar Profesor";
+  abrirModal("modalProfesor");
+}
+
+async function eliminarProfesor(id){
+  if(!confirm("¿Seguro que deseas eliminar este profesor? Esto también limpiará sus clases asignadas.")) return;
+  try{ await api(`/api/v1/profesores/${id}`, { method: "DELETE" }); await renderProfesores(); }
+  catch(err){ alert("Error al eliminar: " + err.message); }
+}
+
+document.getElementById("formProfesor").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const checkboxes = document.querySelectorAll('input[name="profMat"]:checked');
+  if(checkboxes.length === 0) return alert("Debes seleccionar al menos una materia.");
+  const materias = Array.from(checkboxes).map(cb => cb.value);
+  const payload = { nombre: document.getElementById("profNombre").value, email: document.getElementById("profEmail").value, materias };
+  try{
+    if(editingProfesorId){
+      await api(`/api/v1/profesores/${editingProfesorId}`, { method: "PUT", body: JSON.stringify(payload) });
+    }else{
+      await api("/api/v1/profesores", { method: "POST", body: JSON.stringify({ ...payload, password: document.getElementById("profPass").value }) });
+    }
+    cerrarModal("modalProfesor");
+    document.getElementById("formProfesor").reset();
+    editingProfesorId = null;
+    renderProfesores();
+  }catch(err){ alert("Error al guardar: " + err.message); }
+});
+
+async function cargarSelectoresProfesores(){
+  const profesores = await api("/api/v1/profesores");
+  const estSelect = document.getElementById("estProfesor");
+  estSelect.innerHTML = profesores.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join("");
+}
+
+async function renderEstudiantes(){
+  let estudiantes;
+  if(currentUser.role === 'profesor'){
+    estudiantes = await getTeacherStudents();
+  }else{
+    estudiantes = await api('/api/v1/estudiantes');
+  }
+  document.getElementById("mainContent").innerHTML = `
+    <div class="view-header">
+      <h2>${currentUser.role === "admin" ? "Estudiantes" : "Mis estudiantes"}</h2>
+      ${currentUser.role === "admin"
+        ? `<button class="btn btn-primary" onclick="abrirModalCrearEstudiante()">Nuevo estudiante</button>`
+        : `<button class="btn btn-primary" onclick="abrirModalCrearNota()">Nueva nota</button>`}
+    </div>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>Nombre</th><th>Documento</th><th>Materias</th><th>Profesor</th>${currentUser.role === "admin" ? "<th>Acciones</th>" : ""}</tr></thead>
+        <tbody>
+          ${estudiantes.length ? estudiantes.map(e => `
+            <tr>
+              <td>${escapeHtml(e.nombres)} ${escapeHtml(e.apellidos)}</td>
+              <td>${escapeHtml(e.documento)}</td>
+              <td>${renderBadges(normalizarMaterias(e.materias))}</td>
+              <td>${escapeHtml(e.profesorNombre)}</td>
+              ${currentUser.role === "admin" ? `
+              <td>
+                <button class="btn btn-sm" onclick='abrirModalEditarEstudiante(${JSON.stringify(e).replace(/'/g, "&apos;")})'>Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarEstudiante(${e.idEstudiante})">Eliminar</button>
+              </td>` : ""}
+            </tr>`).join("") : `<tr><td colspan="${currentUser.role === 'admin' ? 5 : 4}"><div class="empty-state">No hay estudiantes para mostrar.</div></td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function abrirModalCrearEstudiante(){
+  editingEstudianteId = null;
+  document.getElementById("modalEstudianteTitle").textContent = "Nuevo estudiante";
+  document.getElementById("estId").value = "";
+  document.getElementById("estNombres").value = "";
+  document.getElementById("estApellidos").value = "";
+  document.getElementById("estDoc").value = "";
+  document.getElementById("estEmail").value = "";
+  document.querySelectorAll('input[name="estMat"]').forEach(cb => cb.checked = false);
+  cargarSelectoresProfesores();
+  document.getElementById("estSubmitBtn").textContent = "Guardar Estudiante";
+  abrirModal("modalEstudiante");
+}
+
+function abrirModalEditarEstudiante(e){
+  editingEstudianteId = e.idEstudiante;
+  document.getElementById("modalEstudianteTitle").textContent = "Editar estudiante";
+  document.getElementById("estId").value = e.idEstudiante;
+  document.getElementById("estNombres").value = e.nombres;
+  document.getElementById("estApellidos").value = e.apellidos;
+  document.getElementById("estDoc").value = e.documento;
+  document.getElementById("estEmail").value = e.email || "";
+  document.querySelectorAll('input[name="estMat"]').forEach(cb => cb.checked = normalizarMaterias(e.materias).includes(cb.value));
+  cargarSelectoresProfesores().then(() => { document.getElementById("estProfesor").value = e.profesorNombre === "Sin asignar" ? "" : e.profesorNombre; });
+  document.getElementById("estSubmitBtn").textContent = "Actualizar Estudiante";
+  abrirModal("modalEstudiante");
+}
+
+async function eliminarEstudiante(id){
+  if(!confirm("¿Seguro que deseas eliminar este estudiante y todo su horario?")) return;
+  try{ await api(`/api/v1/estudiantes/${id}`, { method: "DELETE" }); await renderEstudiantes(); }
+  catch(err){ alert("Error al eliminar: " + err.message); }
+}
+
+document.getElementById("formEstudiante").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const checkboxes = document.querySelectorAll('input[name="estMat"]:checked');
+  if(checkboxes.length === 0) return alert("Debes seleccionar al menos una materia.");
+  const materias = Array.from(checkboxes).map(cb => cb.value);
+  const payload = {
+    nombres: document.getElementById("estNombres").value,
+    apellidos: document.getElementById("estApellidos").value,
+    documento: document.getElementById("estDoc").value,
+    email: document.getElementById("estEmail").value,
+    materias,
+    profesor_nombre: document.getElementById("estProfesor").value
+  };
+  try{
+    if(editingEstudianteId){
+      await api(`/api/v1/estudiantes/${editingEstudianteId}`, { method: "PUT", body: JSON.stringify(payload) });
+    }else{
+      await api("/api/v1/estudiantes", { method: "POST", body: JSON.stringify(payload) });
+    }
+    cerrarModal("modalEstudiante");
+    document.getElementById("formEstudiante").reset();
+    editingEstudianteId = null;
+    renderEstudiantes();
+  }catch(err){ alert("Error al guardar: " + err.message); }
+});
+
+function mapWeekdayCodeToLabel(code){
+  const map = { MON:"Lunes", TUE:"Martes", WED:"Miércoles", THU:"Jueves", FRI:"Viernes", SAT:"Sábado" };
+  return map[code] || code;
+}
+
+async function cargarEstudiantesParaHorario(selectedName = ""){
+  const estudiantes = await api("/api/v1/estudiantes");
+  const select = document.getElementById("horarioEstudiante");
+  if (!estudiantes.length) { select.innerHTML = `<option value="">No hay estudiantes</option>`; return; }
+  select.innerHTML = estudiantes.map(e => `<option value="${e.idEstudiante}">${escapeHtml(e.nombres)} ${escapeHtml(e.apellidos)}</option>`).join("");
+  if(selectedName){ for(let i=0; i<select.options.length; i++){ if(select.options[i].text === selectedName){ select.selectedIndex = i; break; } } }
+}
+
+async function cargarProfesoresParaHorario(selectedName = ""){
+  const profesores = await api("/api/v1/profesores-simple");
+  const select = document.getElementById("horarioProfesor");
+  if (!profesores || profesores.length === 0) { select.innerHTML = `<option value="">No hay profesores disponibles</option>`; return; }
+  select.innerHTML = profesores.map(p => {
+    const materias = normalizarMaterias(p.materias).join(", ");
+    return `<option value="${p.idProfesor}">${escapeHtml(p.nombre)}${materias ? " - " + escapeHtml(materias) : ""}</option>`;
+  }).join("");
+  if(selectedName){ for(let i=0; i<select.options.length; i++){ if(select.options[i].text.startsWith(selectedName)){ select.selectedIndex = i; break; } } }
+}
+
+async function renderHorario(){
+  let data;
+  if(currentUser.role === "admin") data = await api("/api/v1/horario");
+  else data = await getTeacherSchedule();
+  const grid = {};
+  data.forEach(c => {
+    const diaLabel = mapWeekdayCodeToLabel(c.dia);
+    const key = `${diaLabel}__${c.horaInicio.slice(0,5)}`;
+    if(!grid[key]) grid[key] = [];
+    grid[key].push(c);
+  });
+  let html = "";
+  html += `<div class="horario-header"></div>`;
+  DIAS.forEach(d => html += `<div class="horario-header">${d}</div>`);
+  FRANJAS.forEach(f => {
+    html += `<div class="horario-time">${f}</div>`;
+    DIAS.forEach(d => {
+      const key = `${d}__${f}`;
+      const clases = (grid[key] || []).map(c => `
+        <div class="clase-card" ${currentUser.role === "admin" ? `onclick='abrirModalEditarHorario(${JSON.stringify(c).replace(/'/g, "&apos;")})'` : ""}>
+          <strong>${escapeHtml(c.estudiante)}</strong><br>
+          ${renderBadges([c.materia])}
+          ${currentUser.role === "admin" ? `<br><small>${escapeHtml(c.profesor)}</small>` : `<br><small>${escapeHtml(c.horaInicio?.slice(0,5) || '')}</small>`}
+        </div>
+      `);
+      html += `<div class="horario-cell">${clases.join("")}</div>`;
+    });
+  });
+  document.getElementById("mainContent").innerHTML = `
+    <div class="view-header">
+      <h2>${currentUser.role === "admin" ? "Horario General" : "Mi Horario"}</h2>
+      ${currentUser.role === "admin" ? `<button class="btn btn-primary" onclick="abrirModalCrearHorario()">Asignar Clase</button>` : `<button class="btn btn-primary" onclick="abrirModalCrearNota()">Registrar nota</button>`}
+    </div>
+    <div class="horario-container"><div class="horario-grid">${html}</div></div>
+  `;
+}
+
+function abrirModalCrearHorario(){
+  editingHorarioId = null;
+  document.getElementById("modalHorarioTitle").textContent = "Asignar Horario";
+  document.getElementById("horarioId").value = "";
+  document.getElementById("horarioDia").value = "MON";
+  document.getElementById("horarioHora").value = "08:00:00";
+  document.getElementById("horarioMateria").value = "MAT";
+  document.getElementById("horarioDeleteBtn").classList.add("hidden");
+  cargarEstudiantesParaHorario();
+  cargarProfesoresParaHorario();
+  document.getElementById("horarioSubmitBtn").textContent = "Asignar al horario";
+  abrirModal("modalHorario");
+}
+
+function abrirModalEditarHorario(c){
+  editingHorarioId = c.idHorario;
+  document.getElementById("modalHorarioTitle").textContent = "Editar Horario";
+  document.getElementById("horarioId").value = c.idHorario;
+  document.getElementById("horarioDeleteBtn").classList.remove("hidden");
+  cargarEstudiantesParaHorario(c.estudiante);
+  cargarProfesoresParaHorario(c.profesor);
+  document.getElementById("horarioDia").value = c.dia;
+  document.getElementById("horarioHora").value = c.horaInicio + ":00";
+  document.getElementById("horarioMateria").value = c.materia;
+  document.getElementById("horarioSubmitBtn").textContent = "Actualizar horario";
+  abrirModal("modalHorario");
+}
+
+document.getElementById("formHorario").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    student_id: parseInt(document.getElementById("horarioEstudiante").value),
+    teacher_id: parseInt(document.getElementById("horarioProfesor").value),
+    weekday: document.getElementById("horarioDia").value,
+    start_time: document.getElementById("horarioHora").value,
+    subject_code: document.getElementById("horarioMateria").value
+  };
+  try{
+    if(editingHorarioId) await api(`/api/v1/horario/${editingHorarioId}`, { method: "PUT", body: JSON.stringify(payload) });
+    else await api("/api/v1/horario", { method: "POST", body: JSON.stringify(payload) });
+    cerrarModal("modalHorario");
+    document.getElementById("formHorario").reset();
+    editingHorarioId = null;
+    renderHorario();
+  }catch(err){ alert(err.message); }
+});
+
+async function accionEliminarHorario(){
+  if(!editingHorarioId) return;
+  if(!confirm("¿Seguro que deseas eliminar esta clase del horario?")) return;
+  try{ await api(`/api/v1/horario/${editingHorarioId}`, { method: "DELETE" }); cerrarModal("modalHorario"); editingHorarioId = null; renderHorario(); }
+  catch(err){ alert("Error al eliminar: " + err.message); }
+}
+
+async function cargarEstudiantesProfesorParaNota(){
+  const estudiantes = await getTeacherStudents();
+  const select = document.getElementById("notaEstudiante");
+  if(!estudiantes.length){ select.innerHTML = `<option value="">No hay estudiantes disponibles</option>`; return; }
+  select.innerHTML = estudiantes.map(e => `<option value="${e.idEstudiante}">${escapeHtml(e.nombres)} ${escapeHtml(e.apellidos)}</option>`).join("");
+}
+
+async function abrirModalCrearNota(){
+  document.getElementById("formNota").reset();
+  await cargarEstudiantesProfesorParaNota();
+  abrirModal("modalNota");
+}
+
+document.getElementById("formNota").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try{
+    await api("/api/v1/notas", {
+      method: "POST",
+      body: JSON.stringify({
+        teacher_email: currentUser.email,
+        student_id: parseInt(document.getElementById("notaEstudiante").value),
+        subject_code: document.getElementById("notaMateria").value,
+        stars: parseInt(document.getElementById("notaStars").value),
+        observation: document.getElementById("notaObs").value
+      })
+    });
+    cerrarModal("modalNota");
+    if(document.getElementById('nav-notas')?.classList.contains('active')) renderNotas();
+    else renderTeacherHome();
+  }catch(err){ alert("Error al guardar nota: " + err.message); }
+});
+
+async function renderNotas(){
+  const notas = await api("/api/v1/notas");
+  let notasFiltradas = notas;
+  if(currentUser.role === "profesor"){
+    const estudiantesProfesor = await getTeacherStudents();
+    const nombresSet = new Set(estudiantesProfesor.map(e => `${e.nombres} ${e.apellidos}`));
+    notasFiltradas = notas.filter(n => nombresSet.has(n.estudiante));
+  }
+  document.getElementById("mainContent").innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2>Notas de clase</h2>
+        <div class="muted">Registra y consulta observaciones pedagógicas por estudiante.</div>
+      </div>
+      ${currentUser.role === "profesor" ? `<button class="btn btn-primary" onclick="abrirModalCrearNota()">Nueva nota</button>` : ``}
+    </div>
+    <div class="note-layout">
+      ${currentUser.role === 'profesor' ? `
+        <div class="note-card">
+          <div class="section-title">Resumen</div>
+          <div class="quick-list">
+            <div class="quick-item"><strong>Total notas</strong><div class="muted" style="margin-top:6px">${notasFiltradas.length} registros visibles.</div></div>
+            <div class="quick-item"><strong>Seguimiento</strong><div class="muted" style="margin-top:6px">Usa observaciones cortas y concretas por clase.</div></div>
+            <div class="quick-item"><strong>Acción rápida</strong><div class="muted" style="margin-top:6px">Puedes registrar una nota nueva desde aquí o desde el horario.</div></div>
+          </div>
+        </div>` : ''}
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Fecha</th><th>Estudiante</th><th>Materia</th><th>Estrellas</th><th>Observación</th></tr></thead>
+            <tbody>
+              ${notasFiltradas.length ? notasFiltradas.map(n => `
+                <tr>
+                  <td>${new Date(n.fecha).toLocaleDateString("es-CO")}</td>
+                  <td>${escapeHtml(n.estudiante)}</td>
+                  <td>${renderBadges([n.materia])}</td>
+                  <td><span style="color:#FFC107">★</span>${escapeHtml(n.estrellas)}</td>
+                  <td>${escapeHtml(n.observacion)}</td>
+                </tr>`).join("") : `<tr><td colspan="5"><div class="empty-state">No hay notas registradas.</div></td></tr>`}
+            </tbody>
+          </table>
+        </div>
+    </div>
+  `;
+}
+
+async function renderDiagnosticos(){
+  const diagnosticoUrl = "https://automatizacion-kumon.camilorubio723.workers.dev/";
+  const perfilLabel = currentUser.role === "admin" ? "administrador" : "docente";
+
+  document.getElementById("mainContent").innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2>Diagnósticos</h2>
+        <div class="muted">Acceso centralizado a la plataforma externa de diagnóstico.</div>
+      </div>
+    </div>
+
+    <div class="teacher-panel" style="max-width:1040px;margin:0 auto;">
+      <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:16px;">
+        <div class="today-card" style="padding:28px;background:linear-gradient(135deg, rgba(0,180,216,.18), rgba(224,64,251,.14));border:1px solid rgba(255,255,255,.10);">
+          <div class="badge" style="background:rgba(255,255,255,.10);color:var(--text);margin-bottom:14px;">Plataforma externa</div>
+          <h3 style="font-size:1.55rem;margin-bottom:10px;">Ir al panel de diagnósticos</h3>
+          <p class="muted" style="line-height:1.7;margin-bottom:18px;max-width:62ch;">
+            El módulo de diagnósticos ahora se gestiona en una plataforma independiente.
+            Desde este panel puedes abrir el acceso correcto y continuar allí todo el proceso.
+          </p>
+
+          <div class="quick-list" style="margin-bottom:18px;">
+            <div class="quick-item">
+              <strong>Nuevo diagnóstico</strong>
+              <div class="muted" style="margin-top:6px;">Completa los datos del estudiante y sube el video de Class Navi para iniciar el análisis.</div>
+            </div>
+            <div class="quick-item">
+              <strong>Seguimiento del proceso</strong>
+              <div class="muted" style="margin-top:6px;">La plataforma externa maneja el avance del diagnóstico hasta la validación y el boletín final.</div>
+            </div>
+            <div class="quick-item">
+              <strong>Acceso para perfil ${perfilLabel}</strong>
+              <div class="muted" style="margin-top:6px;">Se abrirá en una nueva pestaña para que sigas trabajando sin afectar este panel.</div>
+            </div>
+          </div>
+
+          <div class="quick-actions" style="margin-top:0;">
+            <a href="${diagnosticoUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-decoration:none;">
+              Abrir plataforma de diagnósticos
+            </a>
+          </div>
+        </div>
+
+        <div class="note-card" style="padding:24px;">
+          <div class="section-title">Qué encontrarás allí</div>
+          <div class="quick-list">
+            <div class="quick-item">
+              <strong>Registro inicial</strong>
+              <div class="muted" style="margin-top:6px;">Creación del diagnóstico con la información base del estudiante.</div>
+            </div>
+            <div class="quick-item">
+              <strong>Procesamiento del video</strong>
+              <div class="muted" style="margin-top:6px;">Seguimiento del análisis automático del video y cálculo del resultado.</div>
+            </div>
+            <div class="quick-item">
+              <strong>Validación y boletín</strong>
+              <div class="muted" style="margin-top:6px;">Ajustes del orientador y generación del PDF final del diagnóstico.</div>
+            </div>
+          </div>
+
+          <div style="margin-top:18px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);">
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">Enlace configurado</div>
+            <div style="word-break:break-word;">${diagnosticoUrl}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+checkBackend();
+</script>
+</body>
+</html>

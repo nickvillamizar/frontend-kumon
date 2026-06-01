@@ -313,7 +313,7 @@
   </div>
 
 <script>
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://frontend-kumon.onrender.com";
 let currentUser = null;
 let chartMat = null;
 let chartSem = null;
@@ -324,7 +324,12 @@ const FRANJAS = ["08:00","09:00","10:00","14:00","15:00","16:00","17:00"];
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
 
 function abrirModal(id){ document.getElementById(id).classList.add("active"); }
-function cerrarModal(id){ document.getElementById(id).classList.remove("active"); }
+function cerrarModal(id){ 
+  document.getElementById(id).classList.remove("active");
+  if(id === 'modalNota') {
+    document.querySelector('#modalNota .modal-title').textContent = 'Registrar nota de clase';
+  }
+}
 function getInitials(name){ return (name || "NA").split(" ").map(x => x[0]).join("").slice(0,2).toUpperCase(); }
 function escapeHtml(str){ return String(str ?? "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
@@ -541,17 +546,25 @@ async function renderTeacherHome(){
 
 async function renderProfesores(){
   const profesores = await api("/api/v1/profesores");
+  const totalEstudiantes = profesores.reduce((sum, p) => sum + p.totalEstudiantes, 0);
   document.getElementById("mainContent").innerHTML = `
     <div class="view-header">
       <h2>Profesores</h2>
       <button class="btn btn-primary" onclick="abrirModalCrearProfesor()">Nuevo profesor</button>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <select id="filtroProfesor" onchange="filtrarTablaProfesor()" class="form-group" style="max-width:300px;padding:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:.9rem">
+        <option value="">Todos los profesores</option>
+        ${profesores.map(p => `<option value="${p.idProfesor}">${escapeHtml(p.nombre)}</option>`).join("")}
+      </select>
+      <div class="badge" style="background:rgba(0,180,216,.15);color:#4FC3F7;padding:6px 12px">Estudiantes: <span id="chipEstudiantesProf">${totalEstudiantes}</span></div>
     </div>
     <div class="table-container">
       <table>
         <thead><tr><th>Profesor</th><th>Materias</th><th>Estudiantes</th><th>Acciones</th></tr></thead>
         <tbody>
           ${profesores.map(p => `
-            <tr>
+            <tr data-profesor-id="${p.idProfesor}" data-total-est="${p.totalEstudiantes}">
               <td>${escapeHtml(p.nombre)}<br><small class="muted">${escapeHtml(p.email)}</small></td>
               <td>${renderBadges(normalizarMaterias(p.materias))}</td>
               <td>${escapeHtml(p.totalEstudiantes)}</td>
@@ -638,7 +651,7 @@ async function renderEstudiantes(){
     </div>
     <div class="table-container">
       <table>
-        <thead><tr><th>Nombre</th><th>Documento</th><th>Materias</th><th>Profesor</th>${currentUser.role === "admin" ? "<th>Acciones</th>" : ""}</tr></thead>
+        <thead><tr><th>Nombre</th><th>Documento</th><th>Materias</th><th>Profesor</th>${currentUser.role === "admin" ? "<th>Acciones</th>" : "<th>Observación</th>"}</tr></thead>
         <tbody>
           ${estudiantes.length ? estudiantes.map(e => `
             <tr>
@@ -650,8 +663,8 @@ async function renderEstudiantes(){
               <td>
                 <button class="btn btn-sm" onclick='abrirModalEditarEstudiante(${JSON.stringify(e).replace(/'/g, "&apos;")})'>Editar</button>
                 <button class="btn btn-sm btn-danger" onclick="eliminarEstudiante(${e.idEstudiante})">Eliminar</button>
-              </td>` : ""}
-            </tr>`).join("") : `<tr><td colspan="${currentUser.role === 'admin' ? 5 : 4}"><div class="empty-state">No hay estudiantes para mostrar.</div></td></tr>`}
+              </td>` : `<td><button class="btn btn-sm btn-primary" onclick="abrirNotaParaEstudiante(${e.idEstudiante}, '${e.nombres} ${e.apellidos}')">Registrar</button></td>`}
+            </tr>`).join("") : `<tr><td colspan="5"><div class="empty-state">No hay estudiantes para mostrar.</div></td></tr>`}
         </tbody>
       </table>
     </div>
@@ -868,10 +881,13 @@ document.getElementById("formNota").addEventListener("submit", async (e) => {
 async function renderNotas(){
   const notas = await api("/api/v1/notas");
   let notasFiltradas = notas;
+  let profesoresForFilter = [];
   if(currentUser.role === "profesor"){
     const estudiantesProfesor = await getTeacherStudents();
     const nombresSet = new Set(estudiantesProfesor.map(e => `${e.nombres} ${e.apellidos}`));
     notasFiltradas = notas.filter(n => nombresSet.has(n.estudiante));
+  }else{
+    profesoresForFilter = await api("/api/v1/profesores");
   }
   document.getElementById("mainContent").innerHTML = `
     <div class="view-header">
@@ -881,6 +897,13 @@ async function renderNotas(){
       </div>
       ${currentUser.role === "profesor" ? `<button class="btn btn-primary" onclick="abrirModalCrearNota()">Nueva nota</button>` : ``}
     </div>
+    ${currentUser.role === 'admin' ? `
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <select id="filtroNotasProfesor" onchange="filtrarNotasProfesor()" class="form-group" style="max-width:300px;padding:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:.9rem">
+        <option value="">Todos los profesores</option>
+        ${profesoresForFilter.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join("")}
+      </select>
+    </div>` : ''}
     <div class="note-layout">
       ${currentUser.role === 'profesor' ? `
         <div class="note-card">
@@ -893,16 +916,17 @@ async function renderNotas(){
         </div>` : ''}
         <div class="table-container">
           <table>
-            <thead><tr><th>Fecha</th><th>Estudiante</th><th>Materia</th><th>Estrellas</th><th>Observación</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Estudiante</th>${currentUser.role === 'admin' ? '<th>Profesor</th>' : ''}<th>Materia</th><th>Estrellas</th><th>Observación</th></tr></thead>
             <tbody>
               ${notasFiltradas.length ? notasFiltradas.map(n => `
-                <tr>
+                <tr data-prof-nota="${escapeHtml(n.profesor || '')}">
                   <td>${new Date(n.fecha).toLocaleDateString("es-CO")}</td>
                   <td>${escapeHtml(n.estudiante)}</td>
+                  ${currentUser.role === 'admin' ? `<td>${escapeHtml(n.profesor || '')}</td>` : ''}
                   <td>${renderBadges([n.materia])}</td>
                   <td><span style="color:#FFC107">★</span>${escapeHtml(n.estrellas)}</td>
                   <td>${escapeHtml(n.observacion)}</td>
-                </tr>`).join("") : `<tr><td colspan="5"><div class="empty-state">No hay notas registradas.</div></td></tr>`}
+                </tr>`).join("") : `<tr><td colspan="${currentUser.role === 'admin' ? 6 : 5}"><div class="empty-state">No hay notas registradas.</div></td></tr>`}
             </tbody>
           </table>
         </div>
@@ -911,74 +935,79 @@ async function renderNotas(){
 }
 
 async function renderDiagnosticos(){
-  const diagnosticoUrl = "https://automatizacion-kumon.camilorubio723.workers.dev/";
-  const perfilLabel = currentUser.role === "admin" ? "administrador" : "docente";
-
   document.getElementById("mainContent").innerHTML = `
     <div class="view-header">
       <div>
         <h2>Diagnósticos</h2>
-        <div class="muted">Acceso centralizado a la plataforma externa de diagnóstico.</div>
+        <div class="muted">Accede al módulo externo de diagnósticos.</div>
       </div>
     </div>
-
-    <div class="teacher-panel" style="max-width:1040px;margin:0 auto;">
-      <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:16px;">
-        <div class="today-card" style="padding:28px;background:linear-gradient(135deg, rgba(0,180,216,.18), rgba(224,64,251,.14));border:1px solid rgba(255,255,255,.10);">
-          <div class="badge" style="background:rgba(255,255,255,.10);color:var(--text);margin-bottom:14px;">Plataforma externa</div>
-          <h3 style="font-size:1.55rem;margin-bottom:10px;">Ir al panel de diagnósticos</h3>
-          <p class="muted" style="line-height:1.7;margin-bottom:18px;max-width:62ch;">
-            El módulo de diagnósticos ahora se gestiona en una plataforma independiente.
-            Desde este panel puedes abrir el acceso correcto y continuar allí todo el proceso.
-          </p>
-
-          <div class="quick-list" style="margin-bottom:18px;">
-            <div class="quick-item">
-              <strong>Nuevo diagnóstico</strong>
-              <div class="muted" style="margin-top:6px;">Completa los datos del estudiante y sube el video de Class Navi para iniciar el análisis.</div>
-            </div>
-            <div class="quick-item">
-              <strong>Seguimiento del proceso</strong>
-              <div class="muted" style="margin-top:6px;">La plataforma externa maneja el avance del diagnóstico hasta la validación y el boletín final.</div>
-            </div>
-            <div class="quick-item">
-              <strong>Acceso para perfil ${perfilLabel}</strong>
-              <div class="muted" style="margin-top:6px;">Se abrirá en una nueva pestaña para que sigas trabajando sin afectar este panel.</div>
-            </div>
-          </div>
-
-          <div class="quick-actions" style="margin-top:0;">
-            <a href="${diagnosticoUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-decoration:none;">
-              Abrir plataforma de diagnósticos
-            </a>
-          </div>
-        </div>
-
-        <div class="note-card" style="padding:24px;">
-          <div class="section-title">Qué encontrarás allí</div>
-          <div class="quick-list">
-            <div class="quick-item">
-              <strong>Registro inicial</strong>
-              <div class="muted" style="margin-top:6px;">Creación del diagnóstico con la información base del estudiante.</div>
-            </div>
-            <div class="quick-item">
-              <strong>Procesamiento del video</strong>
-              <div class="muted" style="margin-top:6px;">Seguimiento del análisis automático del video y cálculo del resultado.</div>
-            </div>
-            <div class="quick-item">
-              <strong>Validación y boletín</strong>
-              <div class="muted" style="margin-top:6px;">Ajustes del orientador y generación del PDF final del diagnóstico.</div>
-            </div>
-          </div>
-
-          <div style="margin-top:18px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);">
-            <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px;">Enlace configurado</div>
-            <div style="word-break:break-word;">${diagnosticoUrl}</div>
-          </div>
+    <div class="teacher-panel" style="max-width:760px;margin:0 auto">
+      <div class="today-card" style="padding:28px;background:linear-gradient(135deg,rgba(0,180,216,.18),rgba(224,64,251,.14));border:1px solid rgba(255,255,255,.10)">
+        <div class="badge" style="background:rgba(255,255,255,.10);color:var(--text);margin-bottom:14px">Plataforma externa</div>
+        <h3 style="font-size:1.4rem;margin-bottom:10px">Panel de diagnósticos</h3>
+        <p class="muted" style="line-height:1.7;margin-bottom:22px">
+          El módulo de diagnósticos opera en una plataforma independiente. Haz clic para abrirla en una pestaña nueva.
+        </p>
+        <div class="quick-actions">
+          <a href="https://automatizacion-kumon.camilorubio723.workers.dev" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-decoration:none">
+            Abrir plataforma de diagnósticos
+          </a>
         </div>
       </div>
     </div>
   `;
+}
+
+function filtrarTablaProfesor(){
+  const filtro = document.getElementById("filtroProfesor").value;
+  const profesoresSelect = document.getElementById("filtroProfesor");
+  const totalEstud = document.getElementById("chipEstudiantesProf");
+  const filas = document.querySelectorAll("table tbody tr");
+  let totalVisible = 0;
+  
+  filas.forEach(fila => {
+    const profId = fila.getAttribute("data-profesor-id");
+    const totalEst = parseInt(fila.getAttribute("data-total-est")) || 0;
+    
+    if(filtro === "" || profId === filtro) {
+      fila.style.display = "";
+      totalVisible += totalEst;
+    } else {
+      fila.style.display = "none";
+    }
+  });
+  
+  if(filtro === "") {
+    totalVisible = 0;
+    filas.forEach(fila => {
+      totalVisible += parseInt(fila.getAttribute("data-total-est")) || 0;
+    });
+  }
+  
+  if(totalEstud) totalEstud.textContent = totalVisible;
+}
+
+function filtrarNotasProfesor(){
+  const filtro = document.getElementById("filtroNotasProfesor").value;
+  const filas = document.querySelectorAll("table tbody tr");
+  
+  filas.forEach(fila => {
+    const profNota = fila.getAttribute("data-prof-nota");
+    if(filtro === "" || profNota === filtro) {
+      fila.style.display = "";
+    } else {
+      fila.style.display = "none";
+    }
+  });
+}
+
+async function abrirNotaParaEstudiante(studentId, studentName){
+  document.getElementById('formNota').reset();
+  await cargarEstudiantesProfesorParaNota();
+  document.getElementById('notaEstudiante').value = String(studentId);
+  document.querySelector('#modalNota .modal-title').textContent = 'Observación — ' + escapeHtml(studentName);
+  abrirModal('modalNota');
 }
 
 checkBackend();

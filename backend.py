@@ -943,11 +943,14 @@ def listar_notas():
         SELECT
             cn.note_date,
             st.full_name AS estudiante,
+            u.full_name AS profesor,
             sb.code::text AS materia,
             cn.stars,
             cn.observation
         FROM class_notes cn
         JOIN students st ON st.id = cn.student_id
+        JOIN teachers t ON t.id = cn.teacher_id
+        JOIN users u ON u.id = t.user_id
         JOIN subjects sb ON sb.id = cn.subject_id
         WHERE cn.institution_id = %s
         ORDER BY cn.note_date DESC, cn.id DESC
@@ -958,6 +961,7 @@ def listar_notas():
         {
             "fecha": r["note_date"].isoformat(),
             "estudiante": r["estudiante"],
+            "profesor": r["profesor"],
             "materia": r["materia"],
             "estrellas": r["stars"],
             "observacion": r["observation"],

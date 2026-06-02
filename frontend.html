@@ -239,15 +239,7 @@
           </div>
           <div class="form-group">
             <label>Franja Horaria</label>
-            <select id="horarioHora" required>
-              <option value="08:00:00">08:00</option>
-              <option value="09:00:00">09:00</option>
-              <option value="10:00:00">10:00</option>
-              <option value="14:00:00">14:00</option>
-              <option value="15:00:00">15:00</option>
-              <option value="16:00:00">16:00</option>
-              <option value="17:00:00">17:00</option>
-            </select>
+            <input type="time" id="horarioHora" required step="60">
           </div>
         </div>
         <div class="form-group">
@@ -798,7 +790,7 @@ function abrirModalCrearHorario(){
   document.getElementById("modalHorarioTitle").textContent = "Asignar Horario";
   document.getElementById("horarioId").value = "";
   document.getElementById("horarioDia").value = "MON";
-  document.getElementById("horarioHora").value = "08:00:00";
+  document.getElementById("horarioHora").value = "08:00";
   document.getElementById("horarioMateria").value = "MAT";
   document.getElementById("horarioDeleteBtn").classList.add("hidden");
   cargarEstudiantesParaHorario();
@@ -815,7 +807,7 @@ function abrirModalEditarHorario(c){
   cargarEstudiantesParaHorario(c.estudiante);
   cargarProfesoresParaHorario(c.profesor);
   document.getElementById("horarioDia").value = c.dia;
-  document.getElementById("horarioHora").value = c.horaInicio + ":00";
+  document.getElementById("horarioHora").value = c.horaInicio;
   document.getElementById("horarioMateria").value = c.materia;
   document.getElementById("horarioSubmitBtn").textContent = "Actualizar horario";
   abrirModal("modalHorario");

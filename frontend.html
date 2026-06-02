@@ -413,6 +413,7 @@ function renderSidebar(){
       <a onclick="navigateTo('estudiantes')" id="nav-estudiantes">Estudiantes</a>
       <a onclick="navigateTo('profesores')" id="nav-profesores">Profesores</a>
       <a onclick="navigateTo('horario')" id="nav-horario">Horario</a>
+      <a onclick="navigateTo('notas')" id="nav-notas">Notas</a>
       <a onclick="navigateTo('diagnosticos')" id="nav-diagnosticos">Diagnósticos</a>
     `
     : `
@@ -889,48 +890,87 @@ async function renderNotas(){
   }else{
     profesoresForFilter = await api("/api/v1/profesores");
   }
-  document.getElementById("mainContent").innerHTML = `
+  document.getElementById('mainContent').innerHTML = `
     <div class="view-header">
       <div>
         <h2>Notas de clase</h2>
-        <div class="muted">Registra y consulta observaciones pedagógicas por estudiante.</div>
+        <div class="muted">Seguimiento pedagógico registrado por los profesores.</div>
       </div>
-      ${currentUser.role === "profesor" ? `<button class="btn btn-primary" onclick="abrirModalCrearNota()">Nueva nota</button>` : ``}
+      ${currentUser.role === 'profesor'
+        ? `<button class="btn btn-primary" onclick="abrirModalCrearNota()">Nueva nota</button>`
+        : `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <select id="filtroNotasProfesor" onchange="filtrarNotasProfesor()"
+              style="padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:.85rem;min-width:200px">
+              <option value="">Todos los profesores</option>
+              ${(profesoresForFilter || []).map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join('')}
+            </select>
+            <select id="filtroNotasMateria" onchange="filtrarNotasMateria()"
+              style="padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:.85rem">
+              <option value="">Todas las materias</option>
+              <option value="MAT">Matemáticas</option>
+              <option value="ESP">Español</option>
+              <option value="ING">Inglés</option>
+            </select>
+            <span class="badge" style="background:rgba(0,180,216,.15);color:#4FC3F7;padding:6px 12px">
+              ${notasFiltradas.length} registros
+            </span>
+          </div>`
+      }
     </div>
+
     ${currentUser.role === 'admin' ? `
-    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-      <select id="filtroNotasProfesor" onchange="filtrarNotasProfesor()" class="form-group" style="max-width:300px;padding:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:.9rem">
-        <option value="">Todos los profesores</option>
-        ${profesoresForFilter.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join("")}
-      </select>
-    </div>` : ''}
+    <div class="teacher-kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card"><div>Total observaciones</div><div class="value">${notasFiltradas.length}</div></div>
+      <div class="kpi-card"><div>Profesores con notas</div><div class="value">${new Set(notasFiltradas.map(n => n.profesor)).size}</div></div>
+      <div class="kpi-card"><div>Estudiantes evaluados</div><div class="value">${new Set(notasFiltradas.map(n => n.estudiante)).size}</div></div>
+      <div class="kpi-card">
+        <div>Promedio ★</div>
+        <div class="value">${notasFiltradas.length ? (notasFiltradas.reduce((s,n) => s + n.estrellas, 0) / notasFiltradas.length).toFixed(1) : '—'}</div>
+      </div>
+    </div>` : `
     <div class="note-layout">
-      ${currentUser.role === 'profesor' ? `
-        <div class="note-card">
-          <div class="section-title">Resumen</div>
-          <div class="quick-list">
-            <div class="quick-item"><strong>Total notas</strong><div class="muted" style="margin-top:6px">${notasFiltradas.length} registros visibles.</div></div>
-            <div class="quick-item"><strong>Seguimiento</strong><div class="muted" style="margin-top:6px">Usa observaciones cortas y concretas por clase.</div></div>
-            <div class="quick-item"><strong>Acción rápida</strong><div class="muted" style="margin-top:6px">Puedes registrar una nota nueva desde aquí o desde el horario.</div></div>
-          </div>
-        </div>` : ''}
-        <div class="table-container">
-          <table>
-            <thead><tr><th>Fecha</th><th>Estudiante</th>${currentUser.role === 'admin' ? '<th>Profesor</th>' : ''}<th>Materia</th><th>Estrellas</th><th>Observación</th></tr></thead>
-            <tbody>
-              ${notasFiltradas.length ? notasFiltradas.map(n => `
-                <tr data-prof-nota="${escapeHtml(n.profesor || '')}">
-                  <td>${new Date(n.fecha).toLocaleDateString("es-CO")}</td>
-                  <td>${escapeHtml(n.estudiante)}</td>
-                  ${currentUser.role === 'admin' ? `<td>${escapeHtml(n.profesor || '')}</td>` : ''}
-                  <td>${renderBadges([n.materia])}</td>
-                  <td><span style="color:#FFC107">★</span>${escapeHtml(n.estrellas)}</td>
-                  <td>${escapeHtml(n.observacion)}</td>
-                </tr>`).join("") : `<tr><td colspan="${currentUser.role === 'admin' ? 6 : 5}"><div class="empty-state">No hay notas registradas.</div></td></tr>`}
-            </tbody>
-          </table>
+      <div class="note-card">
+        <div class="section-title">Resumen</div>
+        <div class="quick-list">
+          <div class="quick-item"><strong>Total notas</strong><div class="muted" style="margin-top:6px">${notasFiltradas.length} registros visibles.</div></div>
+          <div class="quick-item"><strong>Seguimiento</strong><div class="muted" style="margin-top:6px">Usa observaciones cortas y concretas por clase.</div></div>
+          <div class="quick-item"><strong>Acción rápida</strong><div class="muted" style="margin-top:6px">Puedes registrar una nota nueva desde aquí o desde el horario.</div></div>
         </div>
+      </div>`
+    }
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Estudiante</th>
+            ${currentUser.role === 'admin' ? '<th>Profesor</th>' : ''}
+            <th>Materia</th>
+            <th>Estrellas</th>
+            <th>Observación</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${notasFiltradas.length ? notasFiltradas.map(n => `
+            <tr data-prof-nota="${escapeHtml(n.profesor || '')}" data-mat-nota="${escapeHtml(n.materia)}">
+              <td>${new Date(n.fecha).toLocaleDateString('es-CO')}</td>
+              <td><strong>${escapeHtml(n.estudiante)}</strong></td>
+              ${currentUser.role === 'admin' ? `<td>${escapeHtml(n.profesor || '')}</td>` : ''}
+              <td>${renderBadges([n.materia])}</td>
+              <td><span style="color:#FFC107">★</span> ${escapeHtml(String(n.estrellas))}</td>
+              <td style="max-width:320px;white-space:normal">${escapeHtml(n.observacion)}</td>
+            </tr>
+          `).join('') : `
+            <tr><td colspan="${currentUser.role === 'admin' ? 6 : 5}">
+              <div class="empty-state">No hay notas registradas.</div>
+            </td></tr>
+          `}
+        </tbody>
+      </table>
     </div>
+
+    ${currentUser.role === 'profesor' ? '</div>' : ''}
   `;
 }
 
@@ -988,19 +1028,16 @@ function filtrarTablaProfesor(){
   if(totalEstud) totalEstud.textContent = totalVisible;
 }
 
-function filtrarNotasProfesor(){
-  const filtro = document.getElementById("filtroNotasProfesor").value;
-  const filas = document.querySelectorAll("table tbody tr");
-  
-  filas.forEach(fila => {
-    const profNota = fila.getAttribute("data-prof-nota");
-    if(filtro === "" || profNota === filtro) {
-      fila.style.display = "";
-    } else {
-      fila.style.display = "none";
-    }
+function filtrarNotasProfesor() {
+  const filtroProf = document.getElementById('filtroNotasProfesor')?.value || '';
+  const filtroMat = document.getElementById('filtroNotasMateria')?.value || '';
+  document.querySelectorAll('table tbody tr').forEach(fila => {
+    const profOk = !filtroProf || fila.getAttribute('data-prof-nota') === filtroProf;
+    const matOk = !filtroMat || fila.getAttribute('data-mat-nota') === filtroMat;
+    fila.style.display = (profOk && matOk) ? '' : 'none';
   });
 }
+function filtrarNotasMateria() { filtrarNotasProfesor(); }
 
 async function abrirNotaParaEstudiante(studentId, studentName){
   document.getElementById('formNota').reset();
